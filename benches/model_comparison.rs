@@ -32,18 +32,31 @@ use std::time::Instant;
 use tempfile::TempDir;
 use tokio::runtime::Runtime;
 
-/// The top 5 publicly available model2vec models from the MTEB results table.
-/// Ordered by overall MTEB score (descending).
+/// Publicly available model2vec models from the MTEB results table, plus
+/// newer official and community candidates. Ordered by overall MTEB score
+/// (descending) for the core five; candidate rows follow.
 ///
-/// Note: `static-retrieval-mrl-en-v1` is excluded because it requires
-/// HuggingFace authentication. We use `potion-base-2M` instead to cover
-/// the full size range from 2M to 32M parameters.
+/// `static-retrieval-mrl-en-v1` was previously thought to require HuggingFace
+/// authentication; it is public. It ships in the sentence-transformers static
+/// layout (nested `0_StaticEmbedding/`), so its snapshot is converted to the
+/// flat Model2Vec layout (`embeddings` tensor + `config.json`) before the
+/// benchmark loads it.
 const MODELS: &[(&str, &str)] = &[
     ("potion-base-32M", "minishlab/potion-base-32M"),
     ("potion-base-8M", "minishlab/potion-base-8M"),
     ("potion-retrieval-32M", "minishlab/potion-retrieval-32M"),
     ("potion-base-4M", "minishlab/potion-base-4M"),
     ("potion-base-2M", "minishlab/potion-base-2M"),
+    // Newer candidate rows (v0.4.1 model sweep).
+    (
+        "potion-multilingual-128M",
+        "minishlab/potion-multilingual-128M",
+    ),
+    ("potion-code-16M-v2", "minishlab/potion-code-16M-v2"),
+    (
+        "static-retrieval-mrl-en-v1",
+        "sentence-transformers/static-retrieval-mrl-en-v1",
+    ),
 ];
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 [package]
 name = "mnemoria"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 rust-version = "1.89"
 description = "Persistent, git-friendly memory storage for AI agents with hybrid semantic + full-text search"
@@ -37,6 +37,7 @@ fs2 = "0.4"
 libc = "0.2"
 simsimd = "6"
 atomic-write-file = "0.3"
+safetensors = "0.6"
 
 [dev-dependencies]
 tempfile = "3"

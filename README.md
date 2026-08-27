@@ -184,7 +184,7 @@ The search index is rebuilt on each open and is not stored in git.
 
 - **Storage**: rkyv binary serialization (zero-copy)
 - **Full-Text**: Tantivy (BM25)
-- **Embeddings**: model2vec (512-dim, CPU-only)
+- **Embeddings**: model2vec (1024-dim static retrieval by default, CPU-only)
 - **Similarity**: simsimd (SIMD-accelerated)
 
 
@@ -233,19 +233,22 @@ Benchmarks run with [Criterion.rs](https://github.com/bheisler/criterion.rs)
 | 1,000 | ~14.5 us | ~177 us |
 | 5,000 | ~14.4 us | ~994 us |
 
-### Model comparison (v0.4.0)
+### Model comparison (v0.4.1)
 
-A five-model comparison on Windows 11 used 30 documents in 10 confusable clusters and 30 queries. The benchmark now computes Hugging Face cache SHA-256 hashes in-process, so it runs on Windows without the Unix sha256sum utility.
+An eight-model sweep on Windows 11 used 30 documents in 10 confusable clusters and 30 queries. The benchmark computes Hugging Face cache SHA-256 hashes in-process, so it runs on Windows without the Unix sha256sum utility. It auto-converts sentence-transformers static-embedding models to the flat Model2Vec layout.
 
-| Model | Semantic P@1 | Semantic MRR | Hybrid P@1 | Hybrid MRR | Search latency | Write throughput |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| potion-base-32M | 93.3% | 0.9667 | 73.3% | 0.8067 | 3.10 ms | 175.7 entries/s |
-| potion-base-8M | 90.0% | 0.9444 | 73.3% | 0.8067 | 1.72 ms | 285.6 entries/s |
-| potion-retrieval-32M | **96.7%** | **0.9778** | 73.3% | 0.7956 | 3.49 ms | 153.1 entries/s |
-| potion-base-4M | 90.0% | 0.9354 | 70.0% | 0.7778 | 1.30 ms | 310.7 entries/s |
-| potion-base-2M | 86.7% | 0.9044 | 73.3% | 0.7911 | **1.06 ms** | **332.2 entries/s** |
+| Model | Semantic P@1 | Semantic MRR | Hybrid P@1 | Hybrid MRR | Embed | Search | Write |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **static-retrieval-mrl-en-v1** | **96.7%** | **0.9833** | 76.7% | 0.8233 | 83.4 us | 1.81 ms | 57.1/s |
+| potion-multilingual-128M | 93.3% | 0.9583 | **76.7%** | **0.8250** | 77.8 us | 1.84 ms | 46.9/s |
+| potion-base-32M | 93.3% | 0.9667 | 76.7% | 0.8233 | 42.6 us | 1.93 ms | 52.7/s |
+| potion-base-8M | 90.0% | 0.9444 | 73.3% | 0.8067 | 45.0 us | 1.70 ms | 56.4/s |
+| potion-retrieval-32M | 96.7% | 0.9778 | 73.3% | 0.7956 | 73.5 us | 1.73 ms | 54.0/s |
+| potion-code-16M-v2 | 90.0% | 0.9500 | 70.0% | 0.7800 | 59.8 us | 1.45 ms | 63.7/s |
+| potion-base-4M | 90.0% | 0.9354 | 70.0% | 0.7778 | 61.4 us | 1.32 ms | 54.8/s |
+| potion-base-2M | 86.7% | 0.9044 | 70.0% | 0.7800 | 50.0 us | 1.59 ms | 64.0/s |
 
-The existing potion-base-32M default remains the balanced choice: near-best semantic quality with the best hybrid MRR in this corpus. Run both benchmark suites with:
+The default is now **sentence-transformers/static-retrieval-mrl-en-v1**: it wins pure semantic recall (MRR 0.9833, P@1 96.7%), ties hybrid recall with potion-base-32M (0.8233), and — because it is a 1024-dim static embedding — loads roughly 2x faster per CLI invocation than the old default. potion-multilingual-128M matches hybrid MRR (0.8250) but is 4x the size with no semantic gain. Run both benchmark suites with:
 
 ```bash
 cargo bench --bench api_perf

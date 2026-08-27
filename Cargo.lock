@@ -1084,7 +1084,7 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "mnemoria"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "atomic-write-file",
@@ -1096,6 +1096,7 @@ dependencies = [
  "libc",
  "model2vec",
  "rkyv",
+ "safetensors",
  "serde",
  "serde_json",
  "sha2",
