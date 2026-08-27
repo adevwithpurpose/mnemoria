@@ -25,7 +25,8 @@
 
 use mnemoria::embeddings::EmbeddingBackend;
 use mnemoria::{Config, DurabilityMode, EntryType, Mnemoria};
-use std::io::Write;
+use sha2::{Digest, Sha256};
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use tempfile::TempDir;
@@ -574,13 +575,22 @@ fn download_model(model_id: &str) {
 
         let size = std::fs::metadata(&tmp_dest).map(|m| m.len()).unwrap_or(0);
 
-        // Compute SHA256 for the blob filename (matching HF cache convention)
-        let hash_output = std::process::Command::new("sha256sum")
-            .arg(tmp_dest.to_str().unwrap())
-            .output()
-            .expect("failed to run sha256sum");
-        let hash = String::from_utf8_lossy(&hash_output.stdout);
-        let hash = hash.split_whitespace().next().unwrap_or("unknown");
+        // Compute SHA256 in-process for portability (Windows does not ship
+        // the Unix sha256sum utility used by the original benchmark).
+        let mut file =
+            std::fs::File::open(&tmp_dest).expect("failed to open downloaded model file");
+        let mut hasher = Sha256::new();
+        let mut buffer = [0u8; 64 * 1024];
+        loop {
+            let read = file
+                .read(&mut buffer)
+                .expect("failed to hash downloaded model file");
+            if read == 0 {
+                break;
+            }
+            hasher.update(&buffer[..read]);
+        }
+        let hash = format!("{:x}", hasher.finalize());
 
         let blob_path = blobs_dir.join(hash);
         std::fs::rename(&tmp_dest, &blob_path).expect("failed to rename blob");

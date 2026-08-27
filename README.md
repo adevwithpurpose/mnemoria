@@ -1,6 +1,6 @@
 # Mnemoria
 
-[![CI](https://github.com/one-bit/mnemoria/actions/workflows/ci.yml/badge.svg)](https://github.com/one-bit/mnemoria/actions/workflows/ci.yml)
+[![CI](https://github.com/adevwithpurpose/mnemoria/actions/workflows/ci.yml/badge.svg)](https://github.com/adevwithpurpose/mnemoria/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/mnemoria.svg)](https://crates.io/crates/mnemoria)
 [![docs.rs](https://docs.rs/mnemoria/badge.svg)](https://docs.rs/mnemoria)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -57,6 +57,12 @@ means a lot.
 - **Hybrid Search** - Combines both approaches via Reciprocal Rank Fusion
 - **Git-Friendly** - Append-only binary format, version control safe
 - **Corruption Protection** - CRC32 checksum chain with crash recovery
+- **Supersede-Aware Recall** - Tombstoned memories and tombstones stay out of search and ask results
+- **Adaptive Ranking** - Type importance, recency decay, bounded usage boosts, and a relative score floor
+- **Full-Fidelity Output** - JSON search output includes full IDs and content; ask/search previews are configurable
+- **Entity Index** - Mechanical lookup of paths, UUIDs, filenames, and compound identifiers without an LLM
+- **Semantic Consolidation** - Cluster stored embeddings, keep the newest duplicate, and append audit-safe tombstones
+- **Superseded Pruning** - Optional physical cleanup with checksum-chain relinking
 - **Unlimited Size** - Only bounded by disk space
 
 ## Installation
@@ -70,7 +76,7 @@ means a lot.
 
 ```bash
 # Clone the repository
-git clone https://github.com/one-bit/mnemoria
+git clone https://github.com/adevwithpurpose/mnemoria
 cd mnemoria
 
 # Build and install
@@ -116,7 +122,11 @@ mnemoria ask "what async patterns have I discovered?"
 | `verify`         | Verify integrity (detect corruption)              |
 | `timeline`       | View memories chronologically                     |
 | `rebuild-index`  | Rebuild the search index                          |
-| `compact`        | Remove corrupt entries and rewrite log             |
+| `get`            | Retrieve a full entry by UUID or unambiguous prefix |
+| `compact`        | Rebuild the store; optionally prune superseded entries |
+| `consolidate`    | Supersede older near-duplicates using stored embeddings |
+| `entities`       | Find entries mentioning a path, UUID, or identifier |
+| `mark-used`      | Record useful recall in the append-only usage sidecar |
 | `export`         | Export memories to JSON                           |
 | `import`         | Import memories from JSON                         |
 
@@ -223,10 +233,23 @@ Benchmarks run with [Criterion.rs](https://github.com/bheisler/criterion.rs)
 | 1,000 | ~14.5 us | ~177 us |
 | 5,000 | ~14.4 us | ~994 us |
 
-To run benchmarks yourself:
+### Model comparison (v0.4.0)
+
+A five-model comparison on Windows 11 used 30 documents in 10 confusable clusters and 30 queries. The benchmark now computes Hugging Face cache SHA-256 hashes in-process, so it runs on Windows without the Unix sha256sum utility.
+
+| Model | Semantic P@1 | Semantic MRR | Hybrid P@1 | Hybrid MRR | Search latency | Write throughput |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| potion-base-32M | 93.3% | 0.9667 | 73.3% | 0.8067 | 3.10 ms | 175.7 entries/s |
+| potion-base-8M | 90.0% | 0.9444 | 73.3% | 0.8067 | 1.72 ms | 285.6 entries/s |
+| potion-retrieval-32M | **96.7%** | **0.9778** | 73.3% | 0.7956 | 3.49 ms | 153.1 entries/s |
+| potion-base-4M | 90.0% | 0.9354 | 70.0% | 0.7778 | 1.30 ms | 310.7 entries/s |
+| potion-base-2M | 86.7% | 0.9044 | 73.3% | 0.7911 | **1.06 ms** | **332.2 entries/s** |
+
+The existing potion-base-32M default remains the balanced choice: near-best semantic quality with the best hybrid MRR in this corpus. Run both benchmark suites with:
 
 ```bash
 cargo bench --bench api_perf
+cargo bench --bench model_comparison
 ```
 
 ## License
@@ -235,4 +258,4 @@ MIT License. See `LICENSE` for details.
 
 ## Repository
 
-https://github.com/one-bit/mnemoria
+https://github.com/adevwithpurpose/mnemoria
